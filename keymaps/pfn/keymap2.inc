@@ -130,7 +130,7 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
 
 // this only works on the master side  :(
 #ifdef DIP_SWITCH_ENABLE
-bool dip_switch_update_user(uint8_t index, bool active) { 
+bool dip_switch_update_user(uint8_t index, bool active) {
     if (active) {
         tap_code16(KC_VOLU);
         return false;
@@ -158,6 +158,38 @@ __attribute__((weak)) const keypos_t PROGMEM hand_swap_config[MATRIX_ROWS][MATRI
 void pointing_device_init_user(void) {
     set_auto_mouse_layer(_MOUSE);
     set_auto_mouse_enable(true);
+}
+report_mouse_t pointing_device_task_user(report_mouse_t mouse) {
+    const float divisor = 16;
+
+    static float scroll_h = 0;
+    static float scroll_v = 0;
+    // can't seem to abort the drag scroll while a button is clicked?
+    // mouse.buttons is also 0 regardless of click state?
+    if (is_scrolling) {
+        if (abs(mouse.x) > abs(mouse.y)) {
+            scroll_h += -1 * (float) mouse.x / divisor;
+            mouse.h = (int8_t) scroll_h;
+            scroll_h -= mouse.h;
+            scroll_v = 0;
+        } else {
+            scroll_v += (float) mouse.y / divisor;
+            mouse.v = (int8_t) scroll_v;
+            scroll_v -= mouse.v;
+            scroll_h = 0;
+        }
+        mouse.x = 0;
+        mouse.y = 0;
+    }
+    return mouse;
+
+}
+
+layer_state_t layer_state_set_user(layer_state_t state) {
+    if (get_highest_layer(state) != _MOUSE) {
+        is_scrolling = false;
+    }
+    return state;
 }
 void keyboard_post_init_user(void) {
     pointing_device_set_cpi(800);
