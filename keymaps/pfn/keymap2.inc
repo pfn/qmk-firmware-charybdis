@@ -87,7 +87,6 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
     uint16_t kc = !index ? (clockwise ? KC_VOLU : KC_VOLD) : (clockwise ? KC_WH_D : KC_WH_U);
     switch (get_highest_layer(layer_state | default_layer_state)) {
         case _MOUSE:
-            //kc = clockwise ? KC_WH_D : KC_WH_U;
             kc = KC_NO;
             report_mouse_t mouse = pointing_device_get_report();
             if (get_mods() & MOD_MASK_SHIFT) {
@@ -101,13 +100,13 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
         case _NAV:
             kc = clockwise ? KC_PGDN : KC_PGUP;
             break;
-        // case _ADJUST:
-            // kc = KC_NO;
-            // if (clockwise)
-                // rgb_matrix_step();
-            // else
-                // rgb_matrix_step_reverse();
-            // break;
+        case _COL6:
+            kc = KC_NO;
+            if (clockwise)
+                rgb_matrix_step();
+            else
+                rgb_matrix_step_reverse();
+            break;
         case _MEDIA:
             enforce_code(KC_LCTL);
             kc = clockwise ? KC_TAB : LSFT(KC_TAB);
