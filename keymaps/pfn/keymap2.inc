@@ -96,6 +96,8 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
             }
             pointing_device_set_report(mouse);
             pointing_device_send();
+            // extend auto mouse timer if active
+            pointing_device_task_auto_mouse(mouse);
             break;
         case _NAV:
             kc = clockwise ? KC_PGDN : KC_PGUP;
