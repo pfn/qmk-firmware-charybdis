@@ -158,6 +158,10 @@ void pointing_device_init_user(void) {
     set_auto_mouse_layer(_MOUSE);
     set_auto_mouse_enable(true);
 }
+bool is_mouse_record_user(uint16_t keycode, keyrecord_t* record) {
+    return keycode == DRAG_SCROLL;
+}
+
 report_mouse_t pointing_device_task_user(report_mouse_t mouse) {
     const float divisor = 16;
 
@@ -166,6 +170,7 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse) {
     // can't seem to abort the drag scroll while a button is clicked?
     // mouse.buttons is also 0 regardless of click state?
     if (is_scrolling) {
+        if (mouse.v || mouse.h) return mouse; // already have scrolling
         if (abs(mouse.x) > abs(mouse.y)) {
             scroll_h += -1 * (float) mouse.x / divisor;
             mouse.h = (int8_t) scroll_h;
@@ -183,6 +188,28 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse) {
     return mouse;
 
 }
+#ifdef RGB_MATRIX_ENABLE
+#define _ASSIGN_RGB(red, green, blue) r=red, g=green, b=blue
+#define ASSIGN_RGB(...) _ASSIGN_RGB(__VA_ARGS__)
+bool rgb_matrix_indicators_user() {//uint8_t min, uint8_t max) {
+    uint8_t layer = get_highest_layer(layer_state | default_layer_state);
+    uint8_t r=0, g=0, b=0;
+    static bool indicated = false;
+    if (layer == _MOUSE) {
+        ASSIGN_RGB(RGB_TEAL);
+        indicated = true;
+    }
+    for (uint8_t i = 0; i < RGB_MATRIX_LED_COUNT && (r || g || b || indicated); i++) {
+        if (g_led_config.flags[i] & LED_FLAG_INDICATOR) {
+            rgb_matrix_set_color(i, r, g, b);
+        }
+    }
+    if (!r && !g && !b && indicated) {
+        indicated = false;
+    }
+    return false;
+}
+#endif
 
 layer_state_t layer_state_set_user(layer_state_t state) {
     if (get_highest_layer(state) != _MOUSE) {
