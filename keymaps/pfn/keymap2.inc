@@ -16,7 +16,6 @@ enum my_layers {
 void matrix_init_user(void) {
     numpad_layer = _NUM;
     sym_layer = _SYM;
-    #include "charybdis_rgb_matrix.inc"
 }
 
 enum my_combos {
