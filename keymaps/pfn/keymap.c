@@ -17,6 +17,19 @@
 #include QMK_KEYBOARD_H
 
 #include "process_keymap.h"
+#include "os_detection.h"
+
+enum custom_keycodes {
+    DRAG_SCROLL = SAFE_RANGE,
+    SNIPE,
+    EXIT_MOUSE,
+    NEXT_APP,
+    PREV_APP,
+    NEXT_WIN,
+    PREV_WIN,
+    NEXT_TAB,
+    PREV_TAB
+};
 
 enum my_layers {
     _QWERTY,
@@ -70,7 +83,103 @@ combo_t key_combos[COMBO_COUNT] = {
     MAKE_COMBO(CLNSLSH_QUOT, KC_QUOT)
 };
 
+bool is_scrolling;
+bool is_sniping = false;
+
+void process_scroll(uint16_t keycode) {
+    report_mouse_t mouse = pointing_device_get_report();
+    switch (keycode) {
+        case KC_MS_WH_DOWN:  mouse.v = -4; break;
+        case KC_MS_WH_UP:    mouse.v =  4; break;
+        case KC_MS_WH_LEFT:  mouse.h = -4; break;
+        case KC_MS_WH_RIGHT: mouse.h =  4; break;
+    }
+    pointing_device_set_report(mouse);
+    pointing_device_send();
+}
+
+void enforce_code(uint16_t kc) {
+    if (mod_held != KC_NO && mod_held != kc) {
+        unregister_code(mod_held);
+        mod_held = KC_NO;
+    }
+    if (mod_held == KC_NO)
+        register_code(kc);
+    mod_held = kc;
+}
+
+void process_tab(uint16_t keycode) {
+    enforce_code(KC_LCTL);
+    tap_code16(keycode == NEXT_TAB ? KC_TAB : LSFT(KC_TAB));
+}
+
+void process_window(uint16_t keycode) {
+    uint16_t mod_code = KC_LALT;
+    bool is_mac = OS_MACOS == detected_host_os();
+    if (is_mac) {
+        mod_code = KC_LGUI;
+    }
+    enforce_code(mod_code);
+    uint16_t kc = KC_NO;
+    switch (keycode) {
+        case NEXT_APP: kc = KC_TAB;                         break;
+        case PREV_APP: kc = LSFT(KC_TAB);                   break;
+        case NEXT_WIN: kc = is_mac ? KC_GRV : KC_TAB;       break;
+        case PREV_WIN: kc = LSFT(is_mac ? KC_GRV : KC_TAB); break;
+    }
+    if (kc != KC_NO) {
+        tap_code16(kc);
+    }
+}
+
+bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
+    switch (keycode) {
+    case DRAG_SCROLL:
+        if (record->event.pressed) {
+            is_scrolling = !is_scrolling;
+        }
+        return false;
+    case KC_MS_WH_UP...KC_MS_WH_RIGHT:
+        if (record->event.pressed) {
+            process_scroll(keycode);
+        }
+        return false;
+    case NEXT_APP...PREV_WIN:
+        if (record->event.pressed) {
+            process_window(keycode);
+        }
+        return false;
+    case NEXT_TAB...PREV_TAB:
+        if (record->event.pressed) {
+            process_tab(keycode);
+        }
+        return false;
+    case SNIPE:
+        if (record->event.pressed) {
+            is_sniping = !is_sniping;
+            pointing_device_set_cpi(is_sniping ? 200 : 800);
+        }
+        return false;
+    case EXIT_MOUSE:
+        return false;
+    }
+    // need to return after for proper handling of mod_held from enforce_kc
+    return process_record_user(keycode, record);
+}
+
 #ifdef ENCODER_ENABLE
+
+const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
+    [_QWERTY]  = { ENCODER_CCW_CW(KC_MS_WH_UP,   KC_MS_WH_DOWN)  },
+    [_COLEMAK] = { ENCODER_CCW_CW(KC_MS_WH_UP,   KC_MS_WH_DOWN)  },
+    [_NUM]     = { ENCODER_CCW_CW(PREV_WIN,      NEXT_WIN)       },
+    [_SYM]     = { ENCODER_CCW_CW(PREV_APP,      NEXT_APP)       },
+    [_NAV]     = { ENCODER_CCW_CW(PREV_TAB,      NEXT_TAB)       },
+    [_MOUSE]   = { ENCODER_CCW_CW(KC_MS_WH_LEFT, KC_MS_WH_RIGHT) },
+    [_MEDIA]   = { ENCODER_CCW_CW(KC_VOLD,       KC_VOLU)        },
+    [_COL6]    = { ENCODER_CCW_CW(RGB_RMOD,      RGB_MOD)        },
+};
+
 #define MAKE_KC(mod, tru, els) (mod ? (tru) : (els))
 
 #include <stdarg.h>
@@ -86,62 +195,6 @@ uint16_t extract_mod_kc(uint16_t mods, ...) {
     va_end(ap);
     return result;
 }
-
-void enforce_code(uint16_t kc) {
-    if (mod_held != KC_NO && mod_held != kc) {
-        unregister_code(mod_held);
-        mod_held = KC_NO;
-    }
-    if (mod_held == KC_NO)
-        register_code(kc);
-    mod_held = kc;
-}
-
-bool encoder_update_user(uint8_t index, bool clockwise) {
-
-    uint16_t kc = !index ? (clockwise ? KC_VOLU : KC_VOLD) : (clockwise ? KC_WH_D : KC_WH_U);
-    switch (get_highest_layer(layer_state | default_layer_state)) {
-        case _MOUSE:
-            kc = KC_NO;
-            report_mouse_t mouse = pointing_device_get_report();
-            if (get_mods() & MOD_MASK_SHIFT) {
-                mouse.h = clockwise ? 4 : -4;
-            } else {
-                mouse.v = clockwise ? -4 : 4;
-            }
-            pointing_device_set_report(mouse);
-            pointing_device_send();
-            // extend auto mouse timer if active
-            pointing_device_task_auto_mouse(mouse);
-            break;
-        case _NAV:
-            kc = clockwise ? KC_PGDN : KC_PGUP;
-            break;
-        case _COL6:
-            kc = KC_NO;
-            if (clockwise)
-                rgb_matrix_step();
-            else
-                rgb_matrix_step_reverse();
-            break;
-        case _MEDIA:
-            enforce_code(KC_LCTL);
-            kc = clockwise ? KC_TAB : LSFT(KC_TAB);
-            break;
-        case _NUM:
-            enforce_code(KC_LALT);
-            kc = clockwise ? KC_TAB : LSFT(KC_TAB);
-            break;
-        case _SYM:
-            enforce_code(KC_LGUI);
-            kc = clockwise ? KC_GRV : LSFT(KC_GRV);
-            break;
-    }
-
-    if (kc != KC_NO) tap_code16(kc);
-
-    return false;
-}
 #endif
 
 // this only works on the master side  :(
@@ -155,28 +208,18 @@ bool dip_switch_update_user(uint8_t index, bool active) {
 }
 #endif
 
-#ifdef SWAP_HANDS_ENABLE
-__attribute__((weak)) const keypos_t PROGMEM hand_swap_config[MATRIX_ROWS][MATRIX_COLS] = {
-    // Left
-    {{0, 4}, {1, 4}, {2, 4}, {3, 4}, {4, 4}},
-    {{0, 5}, {1, 5}, {2, 5}, {3, 5}, {4, 5}},
-    {{0, 6}, {1, 6}, {2, 6}, {3, 6}, {4, 6}},
-    {{0, 7}, {1, 7}, {2, 7}, {3, 7}, {4, 7}},
-    // Right
-    {{0, 0}, {1, 0}, {2, 0}, {3, 0}, {4, 0}},
-    {{0, 1}, {1, 1}, {2, 1}, {3, 1}, {4, 1}},
-    {{0, 2}, {1, 2}, {2, 2}, {3, 2}, {4, 2}},
-    {{0, 3}, {1, 3}, {2, 3}, {3, 3}, {4, 3}}
-};
-#endif
-
 #ifdef POINTING_DEVICE_ENABLE
 void pointing_device_init_user(void) {
     set_auto_mouse_layer(_MOUSE);
     set_auto_mouse_enable(true);
 }
 bool is_mouse_record_user(uint16_t keycode, keyrecord_t* record) {
-    return keycode == DRAG_SCROLL;
+    switch (keycode) {
+        case DRAG_SCROLL:
+        case KC_MS_WH_UP...KC_MS_WH_RIGHT:
+            return true;
+    }
+    return false;
 }
 
 report_mouse_t pointing_device_task_user(report_mouse_t mouse) {
@@ -216,6 +259,7 @@ bool rgb_matrix_indicators_user() {//uint8_t min, uint8_t max) {
         ASSIGN_RGB(RGB_TEAL);
         indicated = true;
     }
+    // fast reset colors when the layer is gone by checking `indicated`
     for (uint8_t i = 0; i < RGB_MATRIX_LED_COUNT && (r || g || b || indicated); i++) {
         if (g_led_config.flags[i] & LED_FLAG_INDICATOR) {
             rgb_matrix_set_color(i, r, g, b);
@@ -231,6 +275,10 @@ bool rgb_matrix_indicators_user() {//uint8_t min, uint8_t max) {
 layer_state_t layer_state_set_user(layer_state_t state) {
     if (get_highest_layer(state) != _MOUSE) {
         is_scrolling = false;
+        if (is_sniping) {
+            pointing_device_set_cpi(800);
+        }
+        is_sniping = false;
     }
     return state;
 }

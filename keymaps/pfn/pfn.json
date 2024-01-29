@@ -197,7 +197,7 @@
       "KC_TRNS"
     ],
     [
-      "KC_TRNS",
+      "ANY(EXIT_MOUSE)",
       "KC_TRNS",
       "KC_BTN4",
       "KC_BTN5",
@@ -208,7 +208,7 @@
       "KC_TRNS",
       "KC_TRNS",
       "ANY(DRAG_SCROLL)",
-      "KC_TRNS",
+      "ANY(SNIPE)",
       "KC_TRNS",
       "KC_BTN1",
       "KC_BTN2",
