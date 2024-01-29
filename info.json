@@ -2,7 +2,7 @@
     "manufacturer": "Bastard Keyboards",
     "url": "https://bastardkb.com/charybdis-nano",
     "usb": {
-        "pid": "0x1832",
+        "pid": "0x1830",
         "vid": "0xA8F8",
         "device_version": "2.0.0"
     },
