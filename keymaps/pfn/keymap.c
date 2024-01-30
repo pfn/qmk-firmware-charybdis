@@ -258,6 +258,15 @@ bool rgb_matrix_indicators_user() {//uint8_t min, uint8_t max) {
     if (layer == _MOUSE) {
         ASSIGN_RGB(RGB_TEAL);
         indicated = true;
+    } else if (layer == _NUM && is_oneshot_layer_active()) {
+        ASSIGN_RGB(RGB_PURPLE);
+        indicated = true;
+    } else if (host_keyboard_led_state().caps_lock) {
+        ASSIGN_RGB(RGB_GOLDENROD);
+        indicated = true;
+    } else if (is_swap_hands_on()) {
+        ASSIGN_RGB(RGB_TURQUOISE);
+        indicated = true;
     }
     // fast reset colors when the layer is gone by checking `indicated`
     for (uint8_t i = 0; i < RGB_MATRIX_LED_COUNT && (r || g || b || indicated); i++) {
