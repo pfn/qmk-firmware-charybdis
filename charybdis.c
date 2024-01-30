@@ -1,4 +1,4 @@
-#include "quantum.h"
+#include QMK_KEYBOARD_H
 #ifdef RGB_MATRIX_ENABLE
 /**
  * \brief LEDs index.
@@ -27,7 +27,7 @@ led_config_t g_led_config = { {
     {     32,     33,     38,     39,     42 }, // Top row
     {     31,     34,     37,     40,     43 }, // Middle row
     {     30,     35,     36,     41,     44 }, // Bottom row
-    {     45, NO_LED,     46,     47, NO_LED }, // Thumb cluster
+    {     47, NO_LED,     45,     46, NO_LED }, // Thumb cluster
 }, {
     /* LED index to physical position. */
     // Left split.
