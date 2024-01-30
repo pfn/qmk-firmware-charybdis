@@ -188,7 +188,6 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
 }
 
 #ifdef ENCODER_ENABLE
-
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
     [_QWERTY]  = { ENCODER_CCW_CW(KC_MS_WH_UP,   KC_MS_WH_DOWN)  },
     [_COLEMAK] = { ENCODER_CCW_CW(KC_MS_WH_UP,   KC_MS_WH_DOWN)  },
@@ -199,22 +198,6 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
     [_MEDIA]   = { ENCODER_CCW_CW(KC_VOLD,       KC_VOLU)        },
     [_COL6]    = { ENCODER_CCW_CW(PREV_RGB,      NEXT_RGB)       },
 };
-
-#define MAKE_KC(mod, tru, els) (mod ? (tru) : (els))
-
-#include <stdarg.h>
-uint16_t extract_mod_kc(uint16_t mods, ...) {
-    va_list ap;
-    va_start(ap, mods);
-    uint16_t kc;
-    uint16_t result = KC_NO;
-    while (result == KC_NO && (kc = va_arg(ap, int)) != KC_NO) {
-        if (mods & MOD_BIT(kc))
-            result = kc;
-    }
-    va_end(ap);
-    return result;
-}
 #endif
 
 // this only works on the master side  :(
