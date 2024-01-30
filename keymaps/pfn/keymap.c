@@ -28,7 +28,9 @@ enum custom_keycodes {
     NEXT_WIN,
     PREV_WIN,
     NEXT_TAB,
-    PREV_TAB
+    PREV_TAB,
+    NEXT_RGB,
+    PREV_RGB,
 };
 
 enum my_layers {
@@ -113,6 +115,19 @@ void process_tab(uint16_t keycode) {
     tap_code16(keycode == NEXT_TAB ? KC_TAB : LSFT(KC_TAB));
 }
 
+#define RGB_NEXT_PREV(kc, next, prev) if (kc == NEXT_RGB) { next; } else { prev; }
+void process_kc_rgb(uint16_t keycode) {
+    if (get_mods() & MOD_MASK_SHIFT) {
+        RGB_NEXT_PREV(keycode, rgb_matrix_increase_sat(), rgb_matrix_decrease_sat());
+    } else if (get_mods() & MOD_MASK_ALT) {
+        RGB_NEXT_PREV(keycode, rgb_matrix_increase_val(), rgb_matrix_decrease_val());
+    } else if (get_mods() & MOD_MASK_CTRL) {
+        RGB_NEXT_PREV(keycode, rgb_matrix_increase_hue(), rgb_matrix_decrease_hue());
+    } else {
+        RGB_NEXT_PREV(keycode, rgb_matrix_step(), rgb_matrix_step_reverse());
+    }
+}
+
 void process_window(uint16_t keycode) {
     uint16_t mod_code = KC_LALT;
     bool is_mac = OS_MACOS == detected_host_os();
@@ -160,6 +175,11 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
             pointing_device_set_cpi(is_sniping ? 200 : 800);
         }
         return false;
+    case NEXT_RGB...PREV_RGB:
+        if (record->event.pressed) {
+            process_kc_rgb(keycode);
+        }
+        return false;
     case EXIT_MOUSE:
         return false;
     }
@@ -177,7 +197,7 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
     [_NAV]     = { ENCODER_CCW_CW(PREV_TAB,      NEXT_TAB)       },
     [_MOUSE]   = { ENCODER_CCW_CW(KC_MS_WH_LEFT, KC_MS_WH_RIGHT) },
     [_MEDIA]   = { ENCODER_CCW_CW(KC_VOLD,       KC_VOLU)        },
-    [_COL6]    = { ENCODER_CCW_CW(RGB_RMOD,      RGB_MOD)        },
+    [_COL6]    = { ENCODER_CCW_CW(PREV_RGB,      NEXT_RGB)       },
 };
 
 #define MAKE_KC(mod, tru, els) (mod ? (tru) : (els))
