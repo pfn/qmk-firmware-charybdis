@@ -21,6 +21,10 @@
 #    define DYNAMIC_KEYMAP_LAYER_COUNT 16
 #endif // VIA_ENABLE
 
+// For https://github.com/qmk/qmk_firmware/pull/21777
+#define OS_DETECTION_KEYBOARD_RESET
+#define OS_DETECTION_DEBUG_ENABLE
+
 /* Charybdis-specific features. */
 
 #define I2C_DRIVER I2CD1

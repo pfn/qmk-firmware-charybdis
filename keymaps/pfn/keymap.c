@@ -31,6 +31,8 @@ enum custom_keycodes {
     PREV_TAB,
     NEXT_RGB,
     PREV_RGB,
+    STORE_USBDET,
+    PRINT_USBDET,
 };
 
 enum my_layers {
@@ -130,7 +132,12 @@ void process_kc_rgb(uint16_t keycode) {
 
 void process_window(uint16_t keycode) {
     uint16_t mod_code = KC_LALT;
-    bool is_mac = OS_MACOS == detected_host_os();
+    os_variant_t os = detected_host_os();
+    #ifdef CONSOLE_ENABLE
+    #include "print.h"
+    uprintf("detected os %d\n", os);
+    #endif
+    bool is_mac = OS_MACOS == os || OS_IOS == os;
     if (is_mac) {
         mod_code = KC_LGUI;
     }
@@ -149,6 +156,16 @@ void process_window(uint16_t keycode) {
 
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
+    case STORE_USBDET:
+        if (record->event.pressed) {
+            store_setups_in_eeprom();
+        }
+        return false;
+    case PRINT_USBDET:
+        if (record->event.pressed) {
+            print_stored_setups();
+        }
+        return false;
     case DRAG_SCROLL:
         if (record->event.pressed) {
             is_scrolling = !is_scrolling;

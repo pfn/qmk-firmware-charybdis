@@ -273,7 +273,7 @@
       "KC_TRNS"
     ],
     [
-      "KC_GRV",
+      "QK_BOOT",
       "KC_HOME",
       "KC_UP",
       "KC_END",
@@ -283,7 +283,7 @@
       "KC_8",
       "KC_9",
       "KC_ASTR",
-      "KC_TILD",
+      "ANY(QK_RBT)",
       "KC_LEFT",
       "KC_DOWN",
       "KC_RGHT",
@@ -293,8 +293,8 @@
       "KC_5",
       "KC_6",
       "KC_MINS",
-      "OSM(MOD_LSFT)",
-      "OSM(MOD_LGUI)",
+      "ANY(STORE_USBDET)",
+      "ANY(PRINT_USBDET)",
       "OSM(MOD_LALT)",
       "OSM(MOD_LCTL)",
       "KC_LPRN",
