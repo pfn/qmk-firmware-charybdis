@@ -19,6 +19,9 @@
 #include "process_keymap.h"
 #include "os_detection.h"
 
+#define POINTER_SPEED 700
+#define POINTER_SNIPE_SPEED 200
+
 enum custom_keycodes {
     DRAG_SCROLL = SAFE_RANGE,
     SNIPE,
@@ -190,7 +193,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     case SNIPE:
         if (record->event.pressed) {
             is_sniping = !is_sniping;
-            pointing_device_set_cpi(is_sniping ? 200 : 800);
+            pointing_device_set_cpi(is_sniping ? POINTER_SNIPE_SPEED : POINTER_SPEED);
         }
         return false;
     case NEXT_RGB...PREV_RGB:
@@ -233,7 +236,7 @@ bool dip_switch_update_user(uint8_t index, bool active) {
 void pointing_device_init_user(void) {
     set_auto_mouse_layer(_MOUSE);
     set_auto_mouse_enable(true);
-    pointing_device_set_cpi(800);
+    pointing_device_set_cpi(POINTER_SPEED);
 }
 bool is_mouse_record_user(uint16_t keycode, keyrecord_t* record) {
     switch (keycode) {
@@ -307,7 +310,7 @@ layer_state_t layer_state_set_user(layer_state_t state) {
     if (get_highest_layer(state) != _MOUSE) {
         is_scrolling = false;
         if (is_sniping) {
-            pointing_device_set_cpi(800);
+            pointing_device_set_cpi(POINTER_SPEED);
         }
         is_sniping = false;
     }
