@@ -233,6 +233,7 @@ bool dip_switch_update_user(uint8_t index, bool active) {
 void pointing_device_init_user(void) {
     set_auto_mouse_layer(_MOUSE);
     set_auto_mouse_enable(true);
+    pointing_device_set_cpi(800);
 }
 bool is_mouse_record_user(uint16_t keycode, keyrecord_t* record) {
     switch (keycode) {
@@ -311,8 +312,5 @@ layer_state_t layer_state_set_user(layer_state_t state) {
         is_sniping = false;
     }
     return state;
-}
-void keyboard_post_init_user(void) {
-    pointing_device_set_cpi(800);
 }
 #endif
