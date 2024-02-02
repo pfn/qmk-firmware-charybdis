@@ -34,6 +34,7 @@ enum custom_keycodes {
     STORE_USBDET,
     PRINT_USBDET,
 };
+#include "keymap_configurator.inc"
 
 enum my_layers {
     _QWERTY,
