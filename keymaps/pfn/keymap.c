@@ -51,7 +51,7 @@ enum my_layers {
 };
 
 void matrix_init_user(void) {
-    numpad_layer = _NUM;
+    numpad_layer = _COL6;
     sym_layer = _SYM;
 }
 
@@ -59,6 +59,7 @@ enum my_combos {
   RF_SHOS,
   UJ_SHOS,
   FG_CAPS,
+  TG_NUM,
   YH_NUM,
   QA_ESC,
   AZ_TAB,
@@ -73,6 +74,7 @@ const uint16_t COMBO_LEN = COMBO_COUNT;
 #define MAKE_COMBO(name, keycode) [name] = COMBO(name ## _combo, keycode)
 COMBO_KEYS(RF_SHOS,      KC_R, LT(_NAV, KC_F));
 COMBO_KEYS(UJ_SHOS,      KC_U, KC_J);
+COMBO_KEYS(TG_NUM,       LT(_MEDIA, KC_T), LT(_MOUSE, KC_G));
 COMBO_KEYS(YH_NUM,       KC_Y, KC_H);
 COMBO_KEYS(FG_CAPS,      LT(_NAV, KC_F), LT(_MOUSE, KC_G));
 COMBO_KEYS(QA_ESC,       KC_Q, LCTL_T(KC_A));
@@ -84,7 +86,8 @@ combo_t key_combos[COMBO_COUNT] = {
     MAKE_COMBO(RF_SHOS,      SH_OS),
     MAKE_COMBO(UJ_SHOS,      SH_OS),
     MAKE_COMBO(FG_CAPS,      KC_CAPS),
-    MAKE_COMBO(YH_NUM,       OSL(_NUM)),
+    MAKE_COMBO(TG_NUM,       OSL(_COL6)),
+    MAKE_COMBO(YH_NUM,       OSL(_COL6)),
     MAKE_COMBO(QA_ESC,       KC_ESC),
     MAKE_COMBO(AZ_TAB,       KC_TAB),
     MAKE_COMBO(PCLN_BS,      KC_BSPC),
@@ -129,6 +132,8 @@ void process_kc_rgb(uint16_t keycode) {
         RGB_NEXT_PREV(keycode, rgb_matrix_increase_val(), rgb_matrix_decrease_val());
     } else if (get_mods() & MOD_MASK_CTRL) {
         RGB_NEXT_PREV(keycode, rgb_matrix_increase_hue(), rgb_matrix_decrease_hue());
+    } else if (get_mods() & MOD_MASK_GUI) {
+        RGB_NEXT_PREV(keycode, rgb_matrix_increase_speed(), rgb_matrix_decrease_speed());
     } else {
         RGB_NEXT_PREV(keycode, rgb_matrix_step(), rgb_matrix_step_reverse());
     }
@@ -175,6 +180,9 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
             is_scrolling = !is_scrolling;
         }
         return false;
+    case KC_MS_BTN1 ... KC_MS_BTN8:
+        if (is_scrolling) is_scrolling = false;
+        break;
     case KC_MS_WH_UP...KC_MS_WH_RIGHT:
         if (record->event.pressed) {
             process_scroll(keycode);
@@ -210,14 +218,14 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
 
 #ifdef ENCODER_ENABLE
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
-    [_QWERTY]  = { ENCODER_CCW_CW(KC_MS_WH_UP,   KC_MS_WH_DOWN)  },
-    [_COLEMAK] = { ENCODER_CCW_CW(KC_MS_WH_UP,   KC_MS_WH_DOWN)  },
-    [_NUM]     = { ENCODER_CCW_CW(PREV_WIN,      NEXT_WIN)       },
-    [_SYM]     = { ENCODER_CCW_CW(PREV_APP,      NEXT_APP)       },
-    [_NAV]     = { ENCODER_CCW_CW(PREV_TAB,      NEXT_TAB)       },
-    [_MOUSE]   = { ENCODER_CCW_CW(KC_MS_WH_LEFT, KC_MS_WH_RIGHT) },
-    [_MEDIA]   = { ENCODER_CCW_CW(KC_VOLD,       KC_VOLU)        },
-    [_COL6]    = { ENCODER_CCW_CW(PREV_RGB,      NEXT_RGB)       },
+    [_QWERTY]  = { ENCODER_CCW_CW(KC_VOLD,  KC_VOLU)  },
+    [_COLEMAK] = { ENCODER_CCW_CW(KC_VOLD,  KC_VOLU)  },
+    [_NUM]     = { ENCODER_CCW_CW(PREV_WIN, NEXT_WIN) },
+    [_SYM]     = { ENCODER_CCW_CW(PREV_APP, NEXT_APP) },
+    [_NAV]     = { ENCODER_CCW_CW(PREV_TAB, NEXT_TAB) },
+    [_MOUSE]   = { ENCODER_CCW_CW(KC_WH_L,  KC_WH_R)  },
+    [_MEDIA]   = { ENCODER_CCW_CW(KC_WH_U,  KC_WH_D)  },
+    [_COL6]    = { ENCODER_CCW_CW(PREV_RGB, NEXT_RGB) },
 };
 #endif
 
@@ -255,7 +263,9 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse) {
     // can't seem to abort the drag scroll while a button is clicked?
     // mouse.buttons is also 0 regardless of click state?
     if (is_scrolling) {
+        #if !CIRQUE_PINNACLE_POSITION_MODE
         if (mouse.v || mouse.h) return mouse; // already have scrolling
+        #endif
         if (abs(mouse.x) > abs(mouse.y)) {
             scroll_h += -1 * (float) mouse.x / divisor;
             mouse.h = (int8_t) scroll_h;
@@ -281,9 +291,15 @@ bool rgb_matrix_indicators_user() {//uint8_t min, uint8_t max) {
     uint8_t r=0, g=0, b=0;
     static bool indicated = false;
     if (layer == _MOUSE) {
-        ASSIGN_RGB(RGB_TEAL);
+        if (is_scrolling) {
+            ASSIGN_RGB(RGB_CHARTREUSE);
+        } else if (is_sniping) {
+            ASSIGN_RGB(RGB_RED);
+        } else {
+            ASSIGN_RGB(RGB_TEAL);
+        }
         indicated = true;
-    } else if (layer == _NUM && is_oneshot_layer_active()) {
+    } else if (host_keyboard_led_state().num_lock) {
         ASSIGN_RGB(RGB_PURPLE);
         indicated = true;
     } else if (host_keyboard_led_state().caps_lock) {

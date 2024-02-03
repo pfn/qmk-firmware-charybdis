@@ -91,8 +91,24 @@ __attribute__((weak)) const keypos_t PROGMEM hand_swap_config[MATRIX_ROWS][MATRI
     {{0, 2}, {1, 2}, {2, 2}, {3, 2}, {4, 2}},
     {{0, 3}, {1, 3}, {2, 3}, {3, 3}, {4, 3}}
 };
-#ifdef ENCODER_MAP_ENABLE
+
+#  ifdef ENCODER_MAP_ENABLE
 const uint8_t PROGMEM encoder_hand_swap_config[NUM_ENCODERS] = { 0, 1 };
-#endif
+#  endif
 #endif
 
+bool shutdown_kb(bool going_bootloader) {
+    if (!shutdown_user(going_bootloader)) {
+        return false;
+    }
+#   ifdef RGB_MATRIX_ENABLE
+    if (going_bootloader) {
+        rgb_matrix_set_color_all(RGB_RED);
+    } else {
+        rgb_matrix_set_color_all(RGB_GOLDENROD);
+    }
+    void rgb_matrix_update_pwm_buffers(void);
+    rgb_matrix_update_pwm_buffers();
+#   endif
+    return true;
+}
