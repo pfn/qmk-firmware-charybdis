@@ -34,6 +34,8 @@ enum custom_keycodes {
     PREV_TAB,
     NEXT_RGB,
     PREV_RGB,
+    NEXT_WORD,
+    PREV_WORD,
     STORE_USBDET,
     PRINT_USBDET,
 };
@@ -139,6 +141,15 @@ void process_kc_rgb(uint16_t keycode) {
     }
 }
 
+void process_word(uint16_t keycode) {
+    os_variant_t os = detected_host_os();
+    uint16_t kc = keycode == NEXT_WORD ? KC_RGHT : KC_LEFT;
+    uint16_t mod = os == OS_MACOS || os == OS_IOS ? KC_LALT : KC_LCTL;
+    register_code(mod);
+    tap_code(kc);
+    unregister_code(mod);
+}
+
 void process_window(uint16_t keycode) {
     uint16_t mod_code = KC_LALT;
     os_variant_t os = detected_host_os();
@@ -196,6 +207,11 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     case NEXT_TAB...PREV_TAB:
         if (record->event.pressed) {
             process_tab(keycode);
+        }
+        return false;
+    case NEXT_WORD ... PREV_WORD:
+        if (record->event.pressed) {
+            process_word(keycode);
         }
         return false;
     case SNIPE:
