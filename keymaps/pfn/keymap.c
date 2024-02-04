@@ -54,7 +54,6 @@ enum my_layers {
 
 void matrix_init_user(void) {
     numpad_layer = _COL6;
-    sym_layer = _SYM;
 }
 
 enum my_combos {
@@ -153,10 +152,6 @@ void process_word(uint16_t keycode) {
 void process_window(uint16_t keycode) {
     uint16_t mod_code = KC_LALT;
     os_variant_t os = detected_host_os();
-    #ifdef CONSOLE_ENABLE
-    #include "print.h"
-    uprintf("detected os %d\n", os);
-    #endif
     bool is_mac = OS_MACOS == os || OS_IOS == os;
     if (is_mac) {
         mod_code = KC_LGUI;
@@ -192,7 +187,9 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
         }
         return false;
     case KC_MS_BTN1 ... KC_MS_BTN8:
-        if (is_scrolling) is_scrolling = false;
+        if (is_scrolling) {
+            is_scrolling = false;
+        }
         break;
     case KC_MS_WH_UP...KC_MS_WH_RIGHT:
         if (record->event.pressed) {
@@ -272,7 +269,7 @@ bool is_mouse_record_user(uint16_t keycode, keyrecord_t* record) {
 }
 
 report_mouse_t pointing_device_task_user(report_mouse_t mouse) {
-    const float divisor = 16;
+    const float divisor = 32;
 
     static float scroll_h = 0;
     static float scroll_v = 0;
@@ -299,6 +296,7 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse) {
     return mouse;
 
 }
+bool is_swaphands = false;
 #ifdef RGB_MATRIX_ENABLE
 #define _ASSIGN_RGB(red, green, blue) r=red, g=green, b=blue
 #define ASSIGN_RGB(...) _ASSIGN_RGB(__VA_ARGS__)
@@ -321,7 +319,7 @@ bool rgb_matrix_indicators_user() {//uint8_t min, uint8_t max) {
     } else if (host_keyboard_led_state().caps_lock) {
         ASSIGN_RGB(RGB_GOLDENROD);
         indicated = true;
-    } else if (is_swap_hands_on()) {
+    } else if (is_swaphands || is_swap_hands_on()) {
         ASSIGN_RGB(RGB_TURQUOISE);
         indicated = true;
     }
@@ -349,3 +347,40 @@ layer_state_t layer_state_set_user(layer_state_t state) {
     return state;
 }
 #endif
+#include "transactions.h"
+typedef struct {
+    bool is_scrolling : 1;
+    bool is_sniping : 1;
+    bool is_swaphands : 1;
+    uint8_t unused : 5;
+} __attribute__((packed)) split_transport_data_user;
+
+void send_indicator_state(void) {
+    split_transport_data_user state;
+    state.is_sniping = is_sniping;
+    state.is_scrolling = is_scrolling;
+    state.is_swaphands = is_swap_hands_on();
+    transaction_rpc_send(SYNC_STATE_USER, sizeof(split_transport_data_user), &state);
+}
+
+void slave_transport_handler_user(uint8_t in_len, const void* in_data, uint8_t out_len, void *out_data) {
+    const split_transport_data_user *data = (const split_transport_data_user *) in_data;
+    is_scrolling = data->is_scrolling;
+    is_sniping = data->is_sniping;
+    is_swaphands = data->is_swaphands;
+    rgb_matrix_indicators();
+}
+
+void keyboard_post_init_user(void) {
+    transaction_register_rpc(SYNC_STATE_USER, slave_transport_handler_user);
+}
+
+void housekeeping_task_kb() {
+    if (is_keyboard_master()) {
+        static uint32_t last_sync = 0;
+        if (timer_elapsed32(last_sync) > 100) {
+            last_sync = timer_read32();
+            send_indicator_state();
+        }
+    }
+}

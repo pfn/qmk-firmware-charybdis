@@ -75,6 +75,24 @@ led_config_t g_led_config = { {
     /* index=30 */ LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT,
     /* index=33 */ LED_FLAG_INDICATOR, LED_FLAG_INDICATOR, LED_FLAG_INDICATOR, // Thumb cluster
 } };
+void rgb_matrix_update_pwm_buffers(void);
+bool shutdown_kb(bool going_bootloader) {
+    if (!shutdown_user(going_bootloader)) {
+        return false;
+    }
+    if (going_bootloader) {
+        rgb_matrix_set_color_all(RGB_RED);
+    } else {
+        rgb_matrix_set_color_all(RGB_GOLDENROD);
+    }
+    rgb_matrix_update_pwm_buffers();
+    return true;
+}
+void keyboard_post_init_kb() {
+    rgb_matrix_set_color_all(RGB_WHITE);
+    rgb_matrix_update_pwm_buffers();
+    keyboard_post_init_user();
+}
 #endif
 
 
@@ -96,19 +114,3 @@ __attribute__((weak)) const keypos_t PROGMEM hand_swap_config[MATRIX_ROWS][MATRI
 const uint8_t PROGMEM encoder_hand_swap_config[NUM_ENCODERS] = { 0, 1 };
 #  endif
 #endif
-
-bool shutdown_kb(bool going_bootloader) {
-    if (!shutdown_user(going_bootloader)) {
-        return false;
-    }
-#   ifdef RGB_MATRIX_ENABLE
-    if (going_bootloader) {
-        rgb_matrix_set_color_all(RGB_RED);
-    } else {
-        rgb_matrix_set_color_all(RGB_GOLDENROD);
-    }
-    void rgb_matrix_update_pwm_buffers(void);
-    rgb_matrix_update_pwm_buffers();
-#   endif
-    return true;
-}
