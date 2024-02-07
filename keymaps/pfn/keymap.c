@@ -254,7 +254,11 @@ bool dip_switch_update_user(uint8_t index, bool active) {
 #endif
 
 #ifdef POINTING_DEVICE_ENABLE
+uint32_t mouse_timer = 0;
 void pointing_device_init_user(void) {
+    if (is_keyboard_master() && is_keyboard_left()) {
+        set_auto_mouse_timeout(350);
+    }
     set_auto_mouse_layer(_MOUSE);
     set_auto_mouse_enable(true);
     pointing_device_set_cpi(POINTER_SPEED);
@@ -293,6 +297,8 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse) {
         mouse.x = 0;
         mouse.y = 0;
     }
+    if (auto_mouse_activation(mouse))
+        mouse_timer = timer_read32();
     return mouse;
 
 }
@@ -300,35 +306,37 @@ bool is_swaphands = false;
 #ifdef RGB_MATRIX_ENABLE
 #define _ASSIGN_RGB(red, green, blue) r=red, g=green, b=blue
 #define ASSIGN_RGB(...) _ASSIGN_RGB(__VA_ARGS__)
-void indicate_osm_led(uint8_t mod_mask) {
+bool indicate_osm_led(uint8_t mod_mask) {
+    bool indicated = false;
     if (!mod_mask) {
-        return;
+        return indicated;
     }
     for (uint8_t row = 0; row < MATRIX_ROWS; ++row) {
         for (uint8_t col = 0; col < MATRIX_COLS; ++col) {
             uint16_t kc = keymap_key_to_keycode(_NUM, (keypos_t){col,row});
             if (IS_QK_ONE_SHOT_MOD(kc)) {
-                uint8_t kcmod = QK_ONE_SHOT_MOD_GET_MODS(kc);
-                if (kcmod & mod_mask) {
+                if (QK_ONE_SHOT_MOD_GET_MODS(kc) & mod_mask) {
                     rgb_matrix_set_color(g_led_config.matrix_co[row][col], RGB_WHITE);
+                    indicated = true;
                 }
             }
         }
     }
+    return indicated;
 }
 
 bool rgb_matrix_indicators_user() {//uint8_t min, uint8_t max) {
     uint8_t layer = get_highest_layer(layer_state | default_layer_state);
     uint8_t r=0, g=0, b=0;
     static bool indicated = false;
-    if (layer == _MOUSE) {
-        if (is_scrolling) {
-            ASSIGN_RGB(RGB_CHARTREUSE);
-        } else if (is_sniping) {
-            ASSIGN_RGB(RGB_RED);
-        } else {
-            ASSIGN_RGB(RGB_TEAL);
-        }
+    if (is_scrolling) {
+        ASSIGN_RGB(RGB_CHARTREUSE);
+        indicated = true;
+    } else if (is_sniping) {
+        ASSIGN_RGB(RGB_RED);
+        indicated = true;
+    } else if (layer == _MOUSE) {
+        ASSIGN_RGB(RGB_TEAL);
         indicated = true;
     } else if (host_keyboard_led_state().num_lock) {
         ASSIGN_RGB(RGB_PURPLE);
@@ -340,7 +348,7 @@ bool rgb_matrix_indicators_user() {//uint8_t min, uint8_t max) {
         ASSIGN_RGB(RGB_TURQUOISE);
         indicated = true;
     }
-    indicate_osm_led(get_oneshot_mods());
+    indicated = indicated || indicate_osm_led(get_oneshot_mods());
     // fast reset colors when the layer is gone by checking `indicated`
     for (uint8_t i = 0; i < RGB_MATRIX_LED_COUNT && (r || g || b || indicated); i++) {
         if (g_led_config.flags[i] & LED_FLAG_INDICATOR) {
@@ -354,6 +362,7 @@ bool rgb_matrix_indicators_user() {//uint8_t min, uint8_t max) {
 }
 #endif
 
+#if 0 // this is no longer needed since cleanup is handled on timeout in housekeeping
 layer_state_t layer_state_set_user(layer_state_t state) {
     if (get_highest_layer(state) != _MOUSE) {
         is_scrolling = false;
@@ -364,6 +373,7 @@ layer_state_t layer_state_set_user(layer_state_t state) {
     }
     return state;
 }
+#endif
 #endif
 #include "transactions.h"
 typedef struct {
@@ -399,6 +409,14 @@ void housekeeping_task_kb() {
         if (timer_elapsed32(last_sync) > 100) {
             last_sync = timer_read32();
             send_indicator_state();
+        }
+
+        if ((is_sniping || is_scrolling) && timer_elapsed32(mouse_timer) > 2000 && get_highest_layer(layer_state) != _MOUSE) {
+            if (is_sniping) {
+                pointing_device_set_cpi(POINTER_SPEED);
+            }
+            is_sniping = false;
+            is_scrolling = false;
         }
     }
 }
