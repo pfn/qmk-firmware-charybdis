@@ -300,6 +300,23 @@ bool is_swaphands = false;
 #ifdef RGB_MATRIX_ENABLE
 #define _ASSIGN_RGB(red, green, blue) r=red, g=green, b=blue
 #define ASSIGN_RGB(...) _ASSIGN_RGB(__VA_ARGS__)
+void indicate_osm_led(uint8_t mod_mask) {
+    if (!mod_mask) {
+        return;
+    }
+    for (uint8_t row = 0; row < MATRIX_ROWS; ++row) {
+        for (uint8_t col = 0; col < MATRIX_COLS; ++col) {
+            uint16_t kc = keymap_key_to_keycode(_NUM, (keypos_t){col,row});
+            if (IS_QK_ONE_SHOT_MOD(kc)) {
+                uint8_t kcmod = QK_ONE_SHOT_MOD_GET_MODS(kc);
+                if (kcmod & mod_mask) {
+                    rgb_matrix_set_color(g_led_config.matrix_co[row][col], RGB_WHITE);
+                }
+            }
+        }
+    }
+}
+
 bool rgb_matrix_indicators_user() {//uint8_t min, uint8_t max) {
     uint8_t layer = get_highest_layer(layer_state | default_layer_state);
     uint8_t r=0, g=0, b=0;
@@ -323,6 +340,7 @@ bool rgb_matrix_indicators_user() {//uint8_t min, uint8_t max) {
         ASSIGN_RGB(RGB_TURQUOISE);
         indicated = true;
     }
+    indicate_osm_led(get_oneshot_mods());
     // fast reset colors when the layer is gone by checking `indicated`
     for (uint8_t i = 0; i < RGB_MATRIX_LED_COUNT && (r || g || b || indicated); i++) {
         if (g_led_config.flags[i] & LED_FLAG_INDICATOR) {
