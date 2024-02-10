@@ -2,7 +2,7 @@
   "version": 1,
   "notes": "",
   "documentation": "\"This file is a QMK Configurator export. You can import this at <https://config.qmk.fm>. It can also be used directly with QMK's source code.\n\nTo setup your QMK environment check out the tutorial: <https://docs.qmk.fm/#/newbs>\n\nYou can convert this file to a keymap.c using this command: `qmk json2c {keymap}`\n\nYou can compile this keymap using this command: `qmk compile {keymap}`\"\n",
-  "keyboard": "crkbd/rev1",
+  "keyboard": "bastardkb/skeletyl/v2/stemcell",
   "keymap": "charybdis_mouse",
   "layout": "LAYOUT_split_3x5_3",
   "layers": [
@@ -37,12 +37,12 @@
       "RALT_T(KC_COMM)",
       "RGUI_T(KC_DOT)",
       "RSFT_T(KC_SLSH)",
-      "LT(7,KC_TAB)",
       "LT(2,KC_BSPC)",
       "KC_ENT",
+      "LT(7,KC_TAB)",
+      "LT(5,KC_QUOT)",
       "KC_SPC",
-      "LT(3,KC_ESC)",
-      "LT(5,KC_QUOT)"
+      "LT(3,KC_ESC)"
     ],
     [
       "KC_TRNS",
@@ -116,9 +116,9 @@
       "KC_TRNS",
       "KC_TRNS",
       "KC_TRNS",
+      "KC_EQL",
       "KC_0",
-      "KC_DOT",
-      "KC_EQL"
+      "KC_DOT"
     ],
     [
       "KC_F1",
@@ -151,8 +151,8 @@
       "KC_TRNS",
       "KC_UNDS",
       "KC_PLUS",
-      "KC_TRNS",
       "OSL(2)",
+      "KC_TRNS",
       "KC_TRNS",
       "KC_TRNS",
       "KC_TRNS",
@@ -227,12 +227,12 @@
       "KC_TRNS",
       "KC_TRNS",
       "ANY(SNIPE)",
+      "KC_BTN2",
+      "KC_BTN1",
       "KC_BTN3",
-      "KC_BTN2",
+      "KC_BTN3",
       "KC_BTN1",
-      "KC_BTN1",
-      "KC_BTN2",
-      "KC_BTN3"
+      "KC_BTN2"
     ],
     [
       "KC_TRNS",
@@ -266,10 +266,10 @@
       "KC_TRNS",
       "KC_TRNS",
       "KC_TRNS",
-      "KC_MUTE",
-      "KC_MPLY",
       "KC_MPLY",
       "KC_MUTE",
+      "KC_MUTE",
+      "KC_MPLY",
       "KC_TRNS"
     ],
     [
@@ -304,8 +304,8 @@
       "KC_3",
       "KC_PPLS",
       "KC_TRNS",
-      "KC_TRNS",
       "KC_ENT",
+      "KC_TRNS",
       "KC_0",
       "KC_DOT",
       "KC_EQL"
