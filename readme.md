@@ -9,6 +9,12 @@ Supports:
 * Encoder
 * Other firmware niceties
 
+### Layout
+
+![Keymap Layout](layout.svg)
+
+Generated using `keymap parse -q keymaps/pfn/pfn.json | keymap draw -j info.json - > layout.svg` from https://github.com/caksoylar/keymap-drawer
+
 Notes:
 * info.json matrix is slightly swapped to be compatible with crkbd layouts
   but swaps the inner and outer thumb keys because of positioning makes the
