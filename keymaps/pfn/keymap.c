@@ -255,10 +255,6 @@ bool dip_switch_update_user(uint8_t index, bool active) {
 #endif
 
 #ifdef POINTING_DEVICE_ENABLE
-bool is_touchdown = false;
-bool auto_mouse_activation(report_mouse_t mouse_report) {
-    return is_touchdown || is_cirque_touch_down() || mouse_report.x != 0 || mouse_report.y != 0 || mouse_report.h != 0 || mouse_report.v != 0 || mouse_report.buttons;
-}
 uint32_t mouse_timer = 0;
 void pointing_device_init_user(void) {
     if (is_keyboard_master() && is_keyboard_left()) {
@@ -282,8 +278,6 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse) {
 
     static float scroll_h = 0;
     static float scroll_v = 0;
-    // can't seem to abort the drag scroll while a button is clicked?
-    // mouse.buttons is also 0 regardless of click state?
     if (is_scrolling) {
         #if !CIRQUE_PINNACLE_POSITION_MODE
         if (mouse.v || mouse.h) return mouse; // already have scrolling
@@ -302,7 +296,7 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse) {
         mouse.x = 0;
         mouse.y = 0;
     }
-    if (is_cirque_touch_down() || is_touchdown)
+    if (auto_mouse_activation(mouse))
         mouse_timer = timer_read32();
     return mouse;
 
@@ -366,20 +360,8 @@ bool rgb_matrix_indicators_user() {//uint8_t min, uint8_t max) {
     return false;
 }
 #endif
+#endif
 
-#if 0 // this is no longer needed since cleanup is handled on timeout in housekeeping
-layer_state_t layer_state_set_user(layer_state_t state) {
-    if (get_highest_layer(state) != _MOUSE) {
-        is_scrolling = false;
-        if (is_sniping) {
-            pointing_device_set_cpi(POINTER_SPEED);
-        }
-        is_sniping = false;
-    }
-    return state;
-}
-#endif
-#endif
 #include "transactions.h"
 typedef struct {
     bool is_scrolling : 1;
@@ -388,19 +370,12 @@ typedef struct {
     uint8_t unused : 5;
 } __attribute__((packed)) split_transport_data_user;
 
-typedef struct {
-    bool is_touchdown : 1;
-    uint8_t unused : 7;
-} __attribute__((packed)) split_transport_slave_data_user;
-
 void sync_slave_state(void) {
     split_transport_data_user state;
     state.is_sniping = is_sniping;
     state.is_scrolling = is_scrolling;
     state.is_swaphands = is_swap_hands_on();
-    split_transport_slave_data_user slave_state = {0};
-    transaction_rpc_exec(SYNC_STATE_USER, sizeof(split_transport_data_user), &state, sizeof(split_transport_slave_data_user), &slave_state);
-    is_touchdown = slave_state.is_touchdown;
+    transaction_rpc_send(SYNC_STATE_USER, sizeof(split_transport_data_user), &state);
 }
 
 void slave_transport_handler_user(uint8_t in_len, const void* in_data, uint8_t out_len, void *out_data) {
@@ -408,8 +383,6 @@ void slave_transport_handler_user(uint8_t in_len, const void* in_data, uint8_t o
     is_scrolling = data->is_scrolling;
     is_sniping = data->is_sniping;
     is_swaphands = data->is_swaphands;
-    split_transport_slave_data_user *slave_data = (split_transport_slave_data_user *) out_data;
-    slave_data->is_touchdown = is_cirque_touch_down();
     rgb_matrix_indicators();
 }
 
