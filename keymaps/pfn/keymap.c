@@ -21,6 +21,7 @@
 
 #define POINTER_SPEED 700
 #define POINTER_SNIPE_SPEED 200
+#define SLAVE_SYNC_TIME_MS 60
 
 enum custom_keycodes {
     DRAG_SCROLL = SAFE_RANGE,
@@ -254,10 +255,14 @@ bool dip_switch_update_user(uint8_t index, bool active) {
 #endif
 
 #ifdef POINTING_DEVICE_ENABLE
+bool is_touchdown = false;
+bool auto_mouse_activation(report_mouse_t mouse_report) {
+    return is_touchdown || is_cirque_touch_down() || mouse_report.x != 0 || mouse_report.y != 0 || mouse_report.h != 0 || mouse_report.v != 0 || mouse_report.buttons;
+}
 uint32_t mouse_timer = 0;
 void pointing_device_init_user(void) {
     if (is_keyboard_master() && is_keyboard_left()) {
-        set_auto_mouse_timeout(350);
+        set_auto_mouse_timeout(SLAVE_SYNC_TIME_MS + 5);
     }
     set_auto_mouse_layer(_MOUSE);
     set_auto_mouse_enable(true);
@@ -297,7 +302,7 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse) {
         mouse.x = 0;
         mouse.y = 0;
     }
-    if (auto_mouse_activation(mouse))
+    if (is_cirque_touch_down())
         mouse_timer = timer_read32();
     return mouse;
 
@@ -383,12 +388,19 @@ typedef struct {
     uint8_t unused : 5;
 } __attribute__((packed)) split_transport_data_user;
 
-void send_indicator_state(void) {
+typedef struct {
+    bool is_touchdown : 1;
+    uint8_t unused : 7;
+} __attribute__((packed)) split_transport_slave_data_user;
+
+void sync_slave_state(void) {
     split_transport_data_user state;
     state.is_sniping = is_sniping;
     state.is_scrolling = is_scrolling;
     state.is_swaphands = is_swap_hands_on();
-    transaction_rpc_send(SYNC_STATE_USER, sizeof(split_transport_data_user), &state);
+    split_transport_slave_data_user slave_state = {0};
+    transaction_rpc_exec(SYNC_STATE_USER, sizeof(split_transport_data_user), &state, sizeof(split_transport_slave_data_user), &slave_state);
+    is_touchdown = slave_state.is_touchdown;
 }
 
 void slave_transport_handler_user(uint8_t in_len, const void* in_data, uint8_t out_len, void *out_data) {
@@ -396,6 +408,8 @@ void slave_transport_handler_user(uint8_t in_len, const void* in_data, uint8_t o
     is_scrolling = data->is_scrolling;
     is_sniping = data->is_sniping;
     is_swaphands = data->is_swaphands;
+    split_transport_slave_data_user *slave_data = (split_transport_slave_data_user *) out_data;
+    slave_data->is_touchdown = is_cirque_touch_down();
     rgb_matrix_indicators();
 }
 
@@ -406,9 +420,9 @@ void keyboard_post_init_user(void) {
 void housekeeping_task_kb() {
     if (is_keyboard_master()) {
         static uint32_t last_sync = 0;
-        if (timer_elapsed32(last_sync) > 100) {
+        if (timer_elapsed32(last_sync) > SLAVE_SYNC_TIME_MS) {
             last_sync = timer_read32();
-            send_indicator_state();
+            sync_slave_state();
         }
 
         if ((is_sniping || is_scrolling) && timer_elapsed32(mouse_timer) > 2000 && get_highest_layer(layer_state) != _MOUSE) {
