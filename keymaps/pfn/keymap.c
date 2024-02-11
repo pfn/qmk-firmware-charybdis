@@ -302,7 +302,7 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse) {
         mouse.x = 0;
         mouse.y = 0;
     }
-    if (is_cirque_touch_down())
+    if (is_cirque_touch_down() || is_touchdown)
         mouse_timer = timer_read32();
     return mouse;
 
