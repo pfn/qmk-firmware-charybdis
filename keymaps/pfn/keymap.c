@@ -185,11 +185,17 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     case DRAG_SCROLL:
         if (record->event.pressed) {
             is_scrolling = !is_scrolling;
+#           ifdef POINTING_DEVICE_GESTURES_CURSOR_GLIDE_ENABLE
+            cirque_pinnacle_enable_cursor_glide(is_scrolling);
+#           endif
         }
         return false;
     case KC_MS_BTN1 ... KC_MS_BTN8:
         if (is_scrolling) {
             is_scrolling = false;
+#           ifdef POINTING_DEVICE_GESTURES_CURSOR_GLIDE_ENABLE
+            cirque_pinnacle_enable_cursor_glide(is_scrolling);
+#           endif
         }
         break;
     case KC_MS_WH_UP...KC_MS_WH_RIGHT:
@@ -257,6 +263,9 @@ bool dip_switch_update_user(uint8_t index, bool active) {
 #ifdef POINTING_DEVICE_ENABLE
 uint32_t mouse_timer = 0;
 void pointing_device_init_user(void) {
+#   ifdef POINTING_DEVICE_GESTURES_CURSOR_GLIDE_ENABLE
+    cirque_pinnacle_enable_cursor_glide(false);
+#   endif
     if (is_keyboard_master() && is_keyboard_left()) {
         set_auto_mouse_timeout(SLAVE_SYNC_TIME_MS + 5);
     }
@@ -274,7 +283,7 @@ bool is_mouse_record_user(uint16_t keycode, keyrecord_t* record) {
 }
 
 report_mouse_t pointing_device_task_user(report_mouse_t mouse) {
-    const float divisor = 32;
+    const float divisor = 48;
 
     static float scroll_h = 0;
     static float scroll_v = 0;
@@ -404,6 +413,9 @@ void housekeeping_task_kb() {
             }
             is_sniping = false;
             is_scrolling = false;
+#           ifdef POINTING_DEVICE_GESTURES_CURSOR_GLIDE_ENABLE
+            cirque_pinnacle_enable_cursor_glide(false);
+#           endif
         }
     }
 }
