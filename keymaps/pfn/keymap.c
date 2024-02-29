@@ -333,6 +333,7 @@ bool indicate_osm_led(uint8_t mod_mask) {
     return indicated;
 }
 
+os_variant_t slave_detected_os = OS_UNSURE;
 bool rgb_matrix_indicators_user() {//uint8_t min, uint8_t max) {
     uint8_t layer = get_highest_layer(layer_state | default_layer_state);
     uint8_t r=0, g=0, b=0;
@@ -366,6 +367,26 @@ bool rgb_matrix_indicators_user() {//uint8_t min, uint8_t max) {
     if (!r && !g && !b && indicated) {
         indicated = false;
     }
+    // indicate OS detection
+    r = g = b = 0;
+    for (uint8_t i = 0, found = 0; i < RGB_MATRIX_LED_COUNT && !found; i++) {
+        if (g_led_config.flags[i] & LED_FLAG_INDICATOR) {
+            os_variant_t os = detected_host_os();
+            if (os == OS_MACOS || os == OS_IOS || slave_detected_os == OS_MACOS || slave_detected_os == OS_IOS) {
+                // finder blue
+                r = 0x1c; g = 0x9f; b = 0xf9;
+            } else if (os == OS_WINDOWS || slave_detected_os == OS_WINDOWS) {
+                // microsoft orange
+                r = 0xff; g = 0xbb; b = 0;
+            } else {
+                ASSIGN_RGB(RGB_WHITE);
+            }
+            // if (r || g || b) {
+                rgb_matrix_set_color(i, r, g, b);
+            // }
+            found = 1;
+        }
+    }
     return false;
 }
 #endif
@@ -376,7 +397,8 @@ typedef struct {
     bool is_scrolling : 1;
     bool is_sniping : 1;
     bool is_swaphands : 1;
-    uint8_t unused : 5;
+    uint8_t detected_os : 2;
+    uint8_t unused : 3;
 } __attribute__((packed)) split_transport_data_user;
 
 void sync_slave_state(void) {
@@ -384,6 +406,18 @@ void sync_slave_state(void) {
     state.is_sniping = is_sniping;
     state.is_scrolling = is_scrolling;
     state.is_swaphands = is_swap_hands_on();
+    switch (detected_host_os()) {
+        case OS_WINDOWS:
+            state.detected_os = 1;
+            break;
+        case OS_MACOS:
+        case OS_IOS:
+            state.detected_os = 2;
+            break;
+        default:
+            state.detected_os = 0;
+            break;
+    }
     transaction_rpc_send(SYNC_STATE_USER, sizeof(split_transport_data_user), &state);
 }
 
@@ -392,6 +426,14 @@ void slave_transport_handler_user(uint8_t in_len, const void* in_data, uint8_t o
     is_scrolling = data->is_scrolling;
     is_sniping = data->is_sniping;
     is_swaphands = data->is_swaphands;
+    switch (data->detected_os) {
+        case 1:
+            slave_detected_os = OS_WINDOWS;
+            break;
+        case 2:
+            slave_detected_os = OS_MACOS;
+            break;
+    }
     rgb_matrix_indicators();
 }
 
