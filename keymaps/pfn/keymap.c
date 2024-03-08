@@ -58,15 +58,14 @@ void matrix_init_user(void) {
 }
 
 enum my_combos {
-  RF_SHOS,
-  UJ_SHOS,
-  FG_CAPS,
-  TG_NUM,
-  YH_NUM,
-  QA_ESC,
-  AZ_TAB,
-  PCLN_BS,
-  CLNSLSH_QUOT,
+  SD_SHOS,
+  KL_SHOS,
+  ER_CAPS,
+  UI_CAPS,
+  CV_NUM,
+  MCOM_NUM,
+  WE_ESC,
+  JK_BS,
   COMBO_COUNT
 };
 
@@ -74,26 +73,24 @@ const uint16_t COMBO_LEN = COMBO_COUNT;
 
 #define COMBO_KEYS(name, keycodes...) const uint16_t PROGMEM name ## _combo[] = { keycodes, COMBO_END }
 #define MAKE_COMBO(name, keycode) [name] = COMBO(name ## _combo, keycode)
-COMBO_KEYS(RF_SHOS,      KC_R, LT(_NAV, KC_F));
-COMBO_KEYS(UJ_SHOS,      KC_U, KC_J);
-COMBO_KEYS(TG_NUM,       LT(_MEDIA, KC_T), LT(_MOUSE, KC_G));
-COMBO_KEYS(YH_NUM,       KC_Y, KC_H);
-COMBO_KEYS(FG_CAPS,      LT(_NAV, KC_F), LT(_MOUSE, KC_G));
-COMBO_KEYS(QA_ESC,       KC_Q, LCTL_T(KC_A));
-COMBO_KEYS(AZ_TAB,       LCTL_T(KC_A), LSFT_T(KC_Z));
-COMBO_KEYS(PCLN_BS,      KC_P, RCTL_T(KC_SCLN));
-COMBO_KEYS(CLNSLSH_QUOT, RSFT_T(KC_SLSH), RCTL_T(KC_SCLN));
+COMBO_KEYS(SD_SHOS,      KC_S, LT(_MOUSE, KC_D));
+COMBO_KEYS(KL_SHOS,      KC_K, KC_L);
+COMBO_KEYS(ER_CAPS,      KC_E, KC_R);
+COMBO_KEYS(UI_CAPS,      KC_U, KC_I);
+COMBO_KEYS(JK_BS,        KC_J, KC_K);
+COMBO_KEYS(CV_NUM,       LALT_T(KC_C), LCTL_T(KC_V));
+COMBO_KEYS(MCOM_NUM,     RCTL_T(KC_M), RALT_T(KC_COMMA));
+COMBO_KEYS(WE_ESC,       KC_W, KC_E);
 
 combo_t key_combos[COMBO_COUNT] = {
-    MAKE_COMBO(RF_SHOS,      SH_OS),
-    MAKE_COMBO(UJ_SHOS,      SH_OS),
-    MAKE_COMBO(FG_CAPS,      KC_CAPS),
-    MAKE_COMBO(TG_NUM,       OSL(_COL6)),
-    MAKE_COMBO(YH_NUM,       OSL(_COL6)),
-    MAKE_COMBO(QA_ESC,       KC_ESC),
-    MAKE_COMBO(AZ_TAB,       KC_TAB),
-    MAKE_COMBO(PCLN_BS,      KC_BSPC),
-    MAKE_COMBO(CLNSLSH_QUOT, KC_QUOT)
+    MAKE_COMBO(SD_SHOS,      SH_OS),
+    MAKE_COMBO(KL_SHOS,      SH_OS),
+    MAKE_COMBO(ER_CAPS,      KC_CAPS),
+    MAKE_COMBO(UI_CAPS,      KC_CAPS),
+    MAKE_COMBO(CV_NUM,       OSL(_COL6)),
+    MAKE_COMBO(MCOM_NUM,     OSL(_COL6)),
+    MAKE_COMBO(JK_BS,        KC_BSPC),
+    MAKE_COMBO(WE_ESC,       KC_ESC),
 };
 
 bool is_scrolling;

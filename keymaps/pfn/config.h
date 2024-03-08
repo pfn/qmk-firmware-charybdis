@@ -28,3 +28,5 @@
 #    define AUTO_MOUSE_TIME 650
 #  endif
 #endif // POINTING_DEVICE_ENABLE
+
+#define COMBO_TERM 12
