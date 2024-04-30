@@ -1,0 +1,54 @@
+#!/bin/bash
+
+
+# This requires a line in /etc/fstab like so:
+#E:	/mnt/e	drvfs	noexec,user,noauto,mode=644,uid=1000,gid=1000	0	0
+MOUNTPATH=/mnt/e
+if [ $# -ne 1 ]; then
+	echo "Usage: flash_uf2 <image.uf2>"
+	exit 1
+fi
+
+if [[ "$1" != *.uf2 ]]; then
+	echo "Not a UF2 file: '$1'"
+	exit 1
+fi
+
+if [ ! -f "$1" ]; then
+	echo "File '$1' does not exist"
+	exit 1
+fi
+
+# can't trap ^C otherwise: trap exit SIGINT doesn't respond
+ABORTED=0
+mount_drive() {
+	findmnt $MOUNTPATH 2>&1 > /dev/null
+	if [ $? -ne 0 ]; then
+		sudo mount $MOUNTPATH 2>&1 > /dev/null
+		R=$?
+		if [ $R -ne 0 ]; then
+			if [ $R -eq 130 ]; then
+				echo "Aborted"
+				exit 1
+			fi
+			return 1
+		fi
+	fi
+	return 0
+}
+
+# wait for UF2 drive to appear
+while
+	mount_drive
+	[ $? -ne 0 -a $ABORTED -eq 0 ]
+do
+	:
+done
+
+if [ ! -f $MOUNTPATH/INFO_UF2.TXT ]; then
+	echo "Mounted drive is not for UF2 bootloader"
+	exit 1
+fi
+
+cp "$1" $MOUNTPATH
+sudo umount $MOUNTPATH
