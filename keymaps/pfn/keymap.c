@@ -62,8 +62,8 @@ enum my_combos {
   KL_SHOS,
   ER_CAPS,
   UI_CAPS,
-  CV_NUM,
-  MCOM_NUM,
+  DC_NUM,
+  KCOM_NUM,
   WE_ESC,
   JK_BS,
   COMBO_COUNT
@@ -78,8 +78,8 @@ COMBO_KEYS(KL_SHOS,      KC_K, KC_L);
 COMBO_KEYS(ER_CAPS,      KC_E, KC_R);
 COMBO_KEYS(UI_CAPS,      KC_U, KC_I);
 COMBO_KEYS(JK_BS,        KC_J, KC_K);
-COMBO_KEYS(CV_NUM,       LALT_T(KC_C), LCTL_T(KC_V));
-COMBO_KEYS(MCOM_NUM,     RCTL_T(KC_M), RALT_T(KC_COMMA));
+COMBO_KEYS(DC_NUM,       LT(_MOUSE, KC_D), LALT_T(KC_C));
+COMBO_KEYS(KCOM_NUM,     KC_K, RALT_T(KC_COMMA));
 COMBO_KEYS(WE_ESC,       KC_W, KC_E);
 
 combo_t key_combos[COMBO_COUNT] = {
@@ -87,8 +87,8 @@ combo_t key_combos[COMBO_COUNT] = {
     MAKE_COMBO(KL_SHOS,      SH_OS),
     MAKE_COMBO(ER_CAPS,      KC_CAPS),
     MAKE_COMBO(UI_CAPS,      KC_CAPS),
-    MAKE_COMBO(CV_NUM,       OSL(_COL6)),
-    MAKE_COMBO(MCOM_NUM,     OSL(_COL6)),
+    MAKE_COMBO(DC_NUM,       OSL(_COL6)),
+    MAKE_COMBO(KCOM_NUM,     OSL(_COL6)),
     MAKE_COMBO(JK_BS,        KC_BSPC),
     MAKE_COMBO(WE_ESC,       KC_ESC),
 };
