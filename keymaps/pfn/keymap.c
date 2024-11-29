@@ -18,6 +18,7 @@
 
 #include "process_keymap.h"
 #include "os_detection.h"
+#include "drivers/sensors/cirque_pinnacle_gestures.h"
 
 #define POINTER_SPEED 700
 #define POINTER_SNIPE_SPEED 200
@@ -358,7 +359,11 @@ bool rgb_matrix_indicators_user() {//uint8_t min, uint8_t max) {
     // fast reset colors when the layer is gone by checking `indicated`
     for (uint8_t i = 0; i < RGB_MATRIX_LED_COUNT && (r || g || b || indicated); i++) {
         if (g_led_config.flags[i] & LED_FLAG_INDICATOR) {
-            rgb_matrix_set_color(i, r, g, b);
+            if (layer == _MOUSE && i % 2 == 1) {
+                rgb_matrix_set_color(i, RGB_TEAL);
+            } else {
+                rgb_matrix_set_color(i, r, g, b);
+            }
         }
     }
     if (!r && !g && !b && indicated) {
@@ -378,9 +383,7 @@ bool rgb_matrix_indicators_user() {//uint8_t min, uint8_t max) {
             } else {
                 ASSIGN_RGB(RGB_WHITE);
             }
-            // if (r || g || b) {
-                rgb_matrix_set_color(i, r, g, b);
-            // }
+            rgb_matrix_set_color(i, r, g, b);
             found = 1;
         }
     }
