@@ -439,11 +439,22 @@ void slave_transport_handler_user(uint8_t in_len, const void* in_data, uint8_t o
 
 void keyboard_post_init_user(void) {
     transaction_register_rpc(SYNC_STATE_USER, slave_transport_handler_user);
+
+    wdgInit();
+    static WDGConfig wdgcfg;
+    wdgcfg.rlr = 1000;
+    wdgStart(&WDGD1, &wdgcfg);
+}
+
+bool shutdown_user(bool going_bootloader) {
+    wdgStop(&WDGD1);
+    return true;
 }
 
 void housekeeping_task_kb() {
     if (is_keyboard_master()) {
         static uint32_t last_sync = 0;
+        wdgReset(&WDGD1);
         if (timer_elapsed32(last_sync) > SLAVE_SYNC_TIME_MS) {
             last_sync = timer_read32();
             sync_slave_state();
@@ -459,5 +470,7 @@ void housekeeping_task_kb() {
             cirque_pinnacle_enable_cursor_glide(false);
 #           endif
         }
+    } else {
+        wdgReset(&WDGD1);
     }
 }
