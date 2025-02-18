@@ -451,10 +451,13 @@ bool shutdown_user(bool going_bootloader) {
     return true;
 }
 
+void suspend_power_down_user() {
+    wdgReset(&WDGD1);
+}
+
 void housekeeping_task_kb() {
     if (is_keyboard_master()) {
         static uint32_t last_sync = 0;
-        wdgReset(&WDGD1);
         if (timer_elapsed32(last_sync) > SLAVE_SYNC_TIME_MS) {
             last_sync = timer_read32();
             sync_slave_state();
@@ -470,7 +473,6 @@ void housekeeping_task_kb() {
             cirque_pinnacle_enable_cursor_glide(false);
 #           endif
         }
-    } else {
-        wdgReset(&WDGD1);
     }
+    wdgReset(&WDGD1);
 }
